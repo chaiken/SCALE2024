@@ -1,0 +1,58 @@
+#!/usr/bin/bpftrace
+
+/*
+ * static void __queue_work(int cpu, struct workqueue_struct *wq,
+ *			 struct work_struct *work)
+ *{
+ *	struct pool_workqueue *pwq;
+ *	unsigned int req_cpu = cpu;
+ *}
+ *
+ * trace_workqueue_queue_work(req_cpu, pwq, work);
+ *
+ * include/linux/workqueue.h:
+ *
+ * typedef void (*work_func_t)(struct work_struct *work);
+ *
+ * struct work_struct {
+ *	atomic_long_t data;
+ *	struct list_head entry;
+ *	work_func_t func;
+ * #ifdef CONFIG_LOCKDEP
+ *	struct lockdep_map lockdep_map;
+ * #endif
+ * };
+ *
+ * # cat /sys/kernel/debug/tracing/events/workqueue/workqueue_queue_work/format
+ * name: workqueue_queue_work
+ * ID: 264
+ * format:
+ *     field:unsigned short common_type;       offset:0;       size:2; signed:0;
+ *     field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+ *     field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
+ *     field:int common_pid;   offset:4;       size:4; signed:1;
+ *     field:void * work;      offset:8;       size:8; signed:0;
+ *     field:void * function;  offset:16;      size:8; signed:0;
+ *     field:__data_loc char[] workqueue;      offset:24;      size:4; signed:0;
+ *     field:int req_cpu;      offset:28;      size:4; signed:1;
+ *     field:int cpu;  offset:32;      size:4; signed:1;
+ *
+ * print fmt: "work struct=%p function=%ps workqueue=%s req_cpu=%d cpu=%d", REC->work, REC->function, __get_str(workqueue), REC->req_cpu, REC->cpu
+ */
+
+BEGIN
+{
+	printf("Print function and cpumask for each call to __queue_work.\n");
+}
+
+tracepoint:workqueue:workqueue_queue_work
+{
+         $sym = ksym(args->function);
+        @cpu[$sym] = args->cpu;
+         printf("%s 0x%x\n",  $sym, @cpu[$sym]);
+}
+
+END
+{
+	clear(@cpu);
+}
