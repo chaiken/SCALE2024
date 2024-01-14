@@ -1,0 +1,53 @@
+#!/usr/bin/bpftrace
+
+/*
+ *
+ * static void process_one_work(struct worker *worker, struct work_struct *work) {
+ *	  trace_workqueue_execute_start(work);
+ *	  worker->current_func(work);
+ *	  trace_workqueue_execute_end(work, worker->current_func);
+ * }
+ *
+ * include/linux/workqueue.h:
+ *
+ * typedef void (*work_func_t)(struct work_struct *work);
+ *
+ * struct work_struct {
+ *	atomic_long_t data;
+ *	struct list_head entry;
+ *	work_func_t func;
+ * #ifdef CONFIG_LOCKDEP
+ *	struct lockdep_map lockdep_map;
+ * #endif
+ * };
+ *
+*/
+
+BEGIN
+{
+	printf("%30s\t%20s\n", "workqueue function", "duration(micros)");
+	printf("%30s\t%20s\n", "----------------", "----------------");
+}
+
+tracepoint:workqueue:workqueue_execute_start
+{
+         $sym = ksym(args->function);
+         @start[$sym] = nsecs;
+}
+
+tracepoint:workqueue:workqueue_execute_end
+/@start[ksym(args->function)]/
+{
+         $sym = ksym(args->function);
+	 $s = @start[$sym];
+	 delete(@start[$sym]);
+	 $duration = $s ? (nsecs - $s) : 0;
+
+	 printf("%30s\t\t%d.%3d\n", $sym, $duration/1000, $duration %1000);
+}
+
+
+END
+{
+	clear(@start);
+}
