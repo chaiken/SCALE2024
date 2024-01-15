@@ -1,0 +1,74 @@
+#!/usr/bin/bpftrace
+
+/**
+ * static void __queue_work(int cpu, struct workqueue_struct *wq, struct work_struct *work)
+**/
+
+/*
+Notes: kblockd is a workqueue.
+mm_percpu_wq and kblockd perform more than one task.
+
+[alison@bitscream SCALE2024 (main)]$ sudo ./work_func_which_cpu.bt | grep -v unbound | head -50
+Attaching 2 probes...
+cpumask            workqueue name       work name
+0x2000                     events               bpf_prog_free_deferred
+0x2000                     events               bpf_prog_free_deferred
+0x2000                     events               drm_mode_rmfb_work_fn
+0x0                  mm_percpu_wq               vmstat_update
+0x2                  mm_percpu_wq               vmstat_update
+0x3                  mm_percpu_wq               vmstat_update
+0x4                  mm_percpu_wq               vmstat_update
+0x5                  mm_percpu_wq               vmstat_update
+0x6                  mm_percpu_wq               vmstat_update
+0x2000                     events               drm_mode_rmfb_work_fn
+0x2000                     events               drm_mode_rmfb_work_fn
+0x0                  mm_percpu_wq               vmstat_update
+0x1                  mm_percpu_wq               vmstat_update
+0x2                  mm_percpu_wq               vmstat_update
+0x4                  mm_percpu_wq               vmstat_update
+0x5                  mm_percpu_wq               vmstat_update
+0x0                       kblockd               blk_mq_run_work_fn
+0x0                       kblockd               blk_mq_run_work_fn
+0x0                       kblockd               blk_mq_run_work_fn
+0x0                       kblockd               blk_mq_run_work_fn
+0x2000                    kblockd               blk_mq_timeout_work
+0x2000           inode_switch_wbs               inode_switch_wbs_work_fn
+0x2000                  writeback               wb_workfn
+0x3                  mm_percpu_wq               vmstat_update
+0x6                  mm_percpu_wq               vmstat_update
+0x7                  mm_percpu_wq               vmstat_update
+0x2000                    kblockd               blk_mq_timeout_work
+0x2000                    kblockd               blk_mq_requeue_work
+0x2000                    kblockd               blk_mq_requeue_work
+0x2000                    kblockd               blk_mq_timeout_work
+0x0                  mm_percpu_wq               vmstat_update
+0x1                  mm_percpu_wq               vmstat_update
+0x3                  mm_percpu_wq               vmstat_update
+0x6                  mm_percpu_wq               vmstat_update
+0x2000                    kblockd               blk_mq_requeue_work
+0x2000                    kblockd               blk_mq_requeue_work
+0x2000                    kblockd               blk_mq_requeue_work
+0x0                  mm_percpu_wq               lru_add_drain_per_cpu
+0x1                  mm_percpu_wq               lru_add_drain_per_cpu
+0x2                  mm_percpu_wq               lru_add_drain_per_cpu
+0x3                  mm_percpu_wq               lru_add_drain_per_cpu
+0x4                  mm_percpu_wq               lru_add_drain_per_cpu
+0x5                  mm_percpu_wq               lru_add_drain_per_cpu
+0x6                  mm_percpu_wq               lru_add_drain_per_cpu
+0x7                  mm_percpu_wq               lru_add_drain_per_cpu
+0x1                  mm_percpu_wq               vmstat_update
+0x2                  mm_percpu_wq               vmstat_update
+0x5                  mm_percpu_wq               vmstat_update
+*/
+
+BEGIN
+{
+    printf("cpumask\t%25s\twork name\n", "workqueue name");
+}
+
+kprobe:__queue_work
+{
+    $wq = (struct workqueue_struct *)arg1;
+    $work = (struct work_struct *)arg2;
+     printf("0x%X\t%25s\t\t%s\n", arg0, $wq->name, ksym($work->func));
+}
