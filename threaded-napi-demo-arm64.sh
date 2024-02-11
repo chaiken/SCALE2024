@@ -4,9 +4,16 @@ set -e
 set -u
 
 readonly SYSFS_PATH=/sys/devices/platform/soc@0/30800000.bus/30be0000.ethernet/net/eth0/threaded
+readonly DEVICE=/dev/sda1
+readonly MOUNTPOINT=/mnt/usb
+readonly OFF=0
+readonly ON=1
 
 # preliminary, because kernel symbols are on a USB stick
-mount -o ro /dev/sda1 /mnt/usb
+if  [[ -z $(mount | grep "$MOUNTPOINT") ]]
+then
+    mount -o ro "$DEVICE" "$MOUNTPOINT"
+fi
 
 #0
 echo ""
@@ -26,8 +33,13 @@ echo "1. Find network devices whose NET_RX softirqs can be moved to another thre
 echo "$ sudo find /sys/ -name threaded"
 sudo find /sys/ -name threaded |  grep -v virtual
 echo ""
+echo "$ cat ${SYSFS_PATH}"
+cat "$SYSFS_PATH"
+echo ""
+echo ""
 
-read -sn1 -p "Start netperf!"
+read -sn1 -p "START NETPERF!!"
+
 
 #2
 echo ""
@@ -59,8 +71,9 @@ echo ""
 echo "4. Check on NET_RX softirqs:"
 echo "$ softirqs-bpfcc"
 /usr/sbin/softirqs-bpfcc 2 10
+echo ""
 
-read -sn1 -p "Press any key to continue"
+read -sn1 -p "RESTART NETPERF!"
 
 echo "----------------------------------------------------"
 
@@ -69,9 +82,8 @@ echo ""
 echo ""
 
 #5
-echo "5. echo 0 > ${SYSFS_PATH}"
-echo 0 > "${SYSFS_PATH}"
-echo ""
+echo "5. echo "$ON" > ${SYSFS_PATH}"
+echo "$ON" > "${SYSFS_PATH}"
 echo ""
 
 #6
@@ -90,8 +102,8 @@ echo ""
 echo "7. See if any threads called 'napi' are burning CPU time:"
 echo "$ top -n 1| grep napi"
 # Intentionally mask failing return value.
-readonly result2="$(top -n 1  | grep napi)"
-echo "$result2"
+readonly result4="$(top -n 1  | grep napi)"
+echo "$result4"
 echo ""
 
 read -sn1 -p "Press any key to continue"
@@ -103,4 +115,12 @@ echo "8. Check on NET_RX softirqs:"
 echo "$ softirqs-bpfcc"
 /usr/sbin/softirqs-bpfcc 2 10
 
-umount /dev/sda1; sync
+#9
+echo ""
+echo ""
+echo "Turn threaded NAPI off, although spawned thread remains until reboot."
+echo "$ echo ${OFF} > ${SYSFS_PATH}"
+echo "$OFF" > "${SYSFS_PATH}"
+echo ""
+
+umount "$DEVICE"; sync
