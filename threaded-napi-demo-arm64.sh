@@ -5,6 +5,9 @@ set -u
 
 readonly SYSFS_PATH=/sys/devices/platform/soc@0/30800000.bus/30be0000.ethernet/net/eth0/threaded
 
+# preliminary, because kernel symbols are on a USB stick
+mount -o ro /dev/sda1 /mnt/usb
+
 #0
 echo ""
 echo "Demo will not work before v5.12."
@@ -99,3 +102,5 @@ echo ""
 echo "8. Check on NET_RX softirqs:"
 echo "$ softirqs-bpfcc"
 /usr/sbin/softirqs-bpfcc 2 10
+
+umount /dev/sda1; sync
