@@ -20,7 +20,12 @@ restore() {
 main() {
 #0
     echo ""
-    echo "0. Workqueues which are configurable from sysfs:"
+    echo "0.  echo Demo will not work before v6.7."
+    echo "Kernel version  $(uname -r)"
+
+#1
+    echo ""
+    echo "1. Workqueues which are configurable from sysfs:"
     echo "$ ls /sys/devices/virtual/workqueue"
     ls /sys/devices/virtual/workqueue
     echo ""
@@ -28,22 +33,12 @@ main() {
     read -sn1 -p "Press any key to continue"
 
 
-#1
-    echo ""
-    echo ""
-    echo "1. Consider tunable parameterss for ${WORKQUEUE}:"
-    echo "$ ls /sys/devices/virtual/${WORKQUEUE}"
-    ls "$SYSFS_PATH"
-    echo ""
-
-    read -sn1 -p "Press any key to continue"
-
 #2
     echo ""
     echo ""
-    echo "2. Default affinity scope of unbound ${WORKQUEUE} workqueue:"
-    echo "$ cat /sys/devices/virtual/workqueue/${WORKQUEUE}/affinity_scope"
-    cat "$SYSFS_PATH"/affinity_scope
+    echo "2. Consider tunable parameterss for ${WORKQUEUE}:"
+    echo "$ ls /sys/devices/virtual/${WORKQUEUE}"
+    ls "$SYSFS_PATH"
     echo ""
 
     read -sn1 -p "Press any key to continue"
@@ -51,9 +46,9 @@ main() {
 #3
     echo ""
     echo ""
-    echo "3. Default nice value of unbound ${WORKQUEUE} workqueue:"
-    echo "$ cat /sys/devices/virtual/workqueue/${WORKQUEUE}/nice"
-    cat "$SYSFS_PATH"/nice
+    echo "3. Default affinity scope of unbound ${WORKQUEUE} workqueue:"
+    echo "$ cat /sys/devices/virtual/workqueue/${WORKQUEUE}/affinity_scope"
+    cat "$SYSFS_PATH"/affinity_scope
     echo ""
 
     read -sn1 -p "Press any key to continue"
@@ -61,7 +56,17 @@ main() {
 #4
     echo ""
     echo ""
-    echo "4. Determine in which workqueue pools ${WORKQUEUE} runs by default"
+    echo "4. Default nice value of unbound ${WORKQUEUE} workqueue:"
+    echo "$ cat /sys/devices/virtual/workqueue/${WORKQUEUE}/nice"
+    cat "$SYSFS_PATH"/nice
+    echo ""
+
+    read -sn1 -p "Press any key to continue"
+
+#5
+    echo ""
+    echo ""
+    echo "5. Determine in which workqueue pools ${WORKQUEUE} runs by default"
     echo "Workqueue CPU -> pool"
     echo "====================="
     echo "[    workqueue     \     type   CPU  0  1  2  3  4  5  6  7 dfl]"
@@ -71,20 +76,20 @@ main() {
 
     read -sn1 -p "Press any key to continue"
 
-#5
+#6
     echo ""
     echo ""
-    echo "5. Set nice to 9"
+    echo "6. Set nice to 9"
     echo "$  echo 9 > /sys/devices/virtual/workqueue/${WORKQUEUE}/nice"
     echo 9 > /sys/devices/virtual/workqueue/${WORKQUEUE}/nice
     echo ""
 
    read -sn1 -p "Press any key to continue"
 
-#6
+#7
     echo ""
     echo ""
-    echo "6. In which workqueue pools does ${WORKQUEUE} run NOW?"
+    echo "7. In which workqueue pools does ${WORKQUEUE} run NOW?"
     echo "$ drgn tools/workqueue/wq_dump.py | grep ${WORKQUEUE}"
     echo ""
     echo ""
@@ -99,17 +104,17 @@ main() {
 
     read -sn1 -p "Press any key to continue"
 
-#7
+#8
     echo ""
     echo ""
-    echo "What else runs in workqueue pool ${POOL}?"
+    echo "8. What else runs in workqueue pool ${POOL}?"
     echo "$ drgn tools/workqueue/wq_dump.py | grep ${POOL}"
     drgn "$KERNEL_PATH/"/wq_dump.py | grep ${POOL}
     echo ""
 
     read -sn1 -p "Press any key to continue"
 
-#8
+#9
     echo ""
     echo ""
     restore
