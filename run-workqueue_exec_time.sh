@@ -3,8 +3,17 @@
 set -e
 set -u
 
-readonly TLD=/home/debian/gitsrc/SCALE2024
+readonly HOSTNAME="$(hostname)"
+readonly BOARDNAME=bullseye-dev64mq
 
-echo "workqueue_exec_time.bt | grep -v ldisc"
-"$TLD"/workqueue_exec_time.bt | grep -v ldisc
+# Pick explicit paths since $HOME with sudo is /root.
+if [[ "$BOARDNAME" == "$HOSTNAME" ]]
+then
+    BIN=/home/debian/gitsrc/SCALE2024/workqueue_exec_time.bt
+else
+    BIN=/home/alison/gitsrc/SCALE2024/workqueue_exec_time.bt
+fi
+
+echo "$ workqueue_exec_time.bt | grep -v ldisc"
+"$BIN" | grep -v ldisc
 
