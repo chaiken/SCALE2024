@@ -11,7 +11,7 @@ if [[ "$BOARDNAME" == "$HOSTNAME" ]]
 then
     BIN=/home/debian/gitsrc/SCALE2024/work_func_which_cpu.bt
 else
-    BIN=/home/alison/gitsrc/SCALE2024/workqueue_exec_time.bt
+    BIN=/home/alison/gitsrc/SCALE2024/work_func_which_cpu.bt
 fi
 
 echo ""
