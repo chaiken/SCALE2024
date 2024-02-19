@@ -10,6 +10,7 @@ readonly MOUNT=/mnt/usb
 readonly HOSTNAME="$(hostname)"
 readonly BOARDNAME=bullseye-dev64mq
 
+# The kernel symbols are on a USB stick.
 if [[ "$BOARDNAME" == "$HOSTNAME" ]]
 then
      sudo mount -o ro "$DRIVE" "$MOUNT"
