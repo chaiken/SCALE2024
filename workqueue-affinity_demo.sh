@@ -118,8 +118,8 @@ main() {
     echo ""
     echo ""
     echo "8. What else runs in workqueue pool ${POOL}?"
-    echo "$ drgn tools/workqueue/wq_dump.py | grep ${POOL}"
-    drgn "$KERNEL_PATH/"/wq_dump.py | grep ${POOL}
+    echo "$ drgn tools/workqueue/wq_dump.py | grep ${POOL} | grep -v nice"
+    drgn "$KERNEL_PATH/"/wq_dump.py | grep ${POOL} | grep -v nice
     echo ""
 
     read -sn1 -p "Press any key to continue"
