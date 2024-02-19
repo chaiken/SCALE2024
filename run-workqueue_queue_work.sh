@@ -9,7 +9,7 @@ readonly BOARDNAME=bullseye-dev64mq
 # Pick explicit paths since $HOME with sudo is /root.
 if [[ "$BOARDNAME" == "$HOSTNAME" ]]
 then
-    BIN=/home/debian/gitsrc/SCALE2024/workqueue_exec_time.bit
+    BIN=/home/debian/gitsrc/SCALE2024/workqueue_exec_time.bt
 else
     BIN=/home/alison/gitsrc/SCALE2024/workqueue_exec_time.bt
 fi
