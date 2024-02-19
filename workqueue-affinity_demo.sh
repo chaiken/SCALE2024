@@ -21,7 +21,7 @@ restore() {
 main() {
 #0
     echo ""
-    echo "0.  echo Demo will not work before v6.7."
+    echo "0.  Demo will not work before v6.7."
     echo "Kernel version  $(uname -r)"
 
 #1
