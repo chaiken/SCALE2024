@@ -7,9 +7,21 @@ set -u
 
 readonly DRIVE=/dev/sda1
 readonly MOUNT=/mnt/usb
+readonly HOSTNAME="$(hostname)"
+readonly BOARDNAME=bullseye-dev64mq
 
-sudo mount -o ro "$DRIVE" "$MOUNT"
+if [[ "$BOARDNAME" == "$HOSTNAME" ]]
+then
+     sudo mount -o ro "$DRIVE" "$MOUNT"
+fi
 
+echo ""
+echo ""
+echo "$ sudo /usr/sbin/stackcount-bpfcc __do_softirq -D 10"
+echo ""
 sudo /usr/sbin/stackcount-bpfcc __do_softirq -D 10
 
-sudo umount "$MOUNT"
+if [[ "$BOARDNAME" == "$HOSTNAME" ]]
+then
+   sudo umount "$MOUNT"
+fi
