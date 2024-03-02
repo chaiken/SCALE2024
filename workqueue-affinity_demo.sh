@@ -4,11 +4,15 @@ set -e
 set -u
 
 readonly KERNEL_PATH=/home/alison/gitsrc/linux-trees/linux/tools/workqueue
+readonly KERNEL_MIN_VERSION=66
+readonly KERNEL_VERSION="$(uname -r | cut -f 1 -d '-')"
+readonly OPERAND="$(echo 10*"$KERNEL_VERSION" | bc |  cut -f 1 -d '.')"
 readonly WORKQUEUE=nvme-delete-wq
 readonly SYSFS_PATH=/sys/devices/virtual/workqueue/${WORKQUEUE}
 readonly DEFAULT_AFFINITY_SCOPE=$(cat /sys/devices/virtual/workqueue/${WORKQUEUE}/affinity_scope | cut -f 1 -d " ")
 readonly DEFAULT_NICE=$(cat /sys/devices/virtual/workqueue/${WORKQUEUE}/nice)
 readonly NEWNICE=-4
+readonly DRGN="$(which drgn)"
 
 restore() {
     echo "Restoring default settings"
@@ -21,8 +25,19 @@ restore() {
 main() {
 #0
     echo ""
-    echo "0.  Demo will not work before v6.7."
+    echo "0.  Demo will not work before v6.6."
     echo "Kernel version  $(uname -r)"
+    if (( "$OPERAND" < "$KERNEL_MIN_VERSION" )) then
+         exit 0
+    fi
+   if [[ ! -f "$DRGN" ]]; then
+       echo "Please install the drgn debugger."
+       exit 0
+   fi
+    if [[ ! -f "$KERNEL_PATH/wq_dump.py" ]] ; then
+        echo "Needed script ${KERNEL_PATH}/wq_dump.py missing"
+	exit 0
+    fi
 
 #1
     echo ""
@@ -68,63 +83,80 @@ main() {
     echo ""
     echo ""
     echo "5. Determine in which workqueue pools ${WORKQUEUE} runs by default"
+    echo ""
+    echo ""
     echo "Workqueue CPU -> pool"
     echo "====================="
     echo "[    workqueue     \     type   CPU  0  1  2  3  4  5  6  7 dfl]"
     echo "$ drgn tools/workqueue/wq_dump.py | grep ${WORKQUEUE}"
-     drgn "$KERNEL_PATH"/wq_dump.py | grep ${WORKQUEUE}
+    "$DRGN" "$KERNEL_PATH"/wq_dump.py | grep ${WORKQUEUE}
     echo ""
 
     read -sn1 -p "Press any key to continue"
 
+    readonly OLDPOOL="$("$DRGN" "$KERNEL_PATH"/wq_dump.py |  grep "${WORKQUEUE}"  |  awk {'print $3;'})"
+
 #6
     echo ""
     echo ""
-    echo "6. Set nice to ${NEWNICE}"
+    echo "6. What else runs in workqueue pool ${OLDPOOL}?"
+    echo ""
+    echo "$ drgn tools/workqueue/wq_dump.py | grep ${OLDPOOL} | grep -v nice"
+    "$DRGN" "$KERNEL_PATH/"/wq_dump.py | grep ${OLDPOOL} | grep -v nice
+    echo ""
+
+#7
+    echo ""
+    echo ""
+    echo "7. Set nice to ${NEWNICE}"
+    echo ""
     echo "$  echo ${NEWNICE} > /sys/devices/virtual/workqueue/${WORKQUEUE}/nice"
     echo "$NEWNICE" > /sys/devices/virtual/workqueue/${WORKQUEUE}/nice
     echo ""
 
    read -sn1 -p "Press any key to continue"
 
-#7
+#8
     echo ""
     echo ""
-    echo "7. In which workqueue pools does ${WORKQUEUE} run NOW?"
+    echo "8. In which workqueue pools does ${WORKQUEUE} run NOW?"
     echo "$ drgn tools/workqueue/wq_dump.py | grep ${WORKQUEUE}"
     echo ""
     echo ""
     echo "Workqueue CPU -> pool"
     echo "====================="
     echo "[    workqueue     \     type   CPU  0  1  2  3  4  5  6  7 dfl]"
-    drgn "$KERNEL_PATH"/wq_dump.py | grep ${WORKQUEUE}
+    "$DRGN" "$KERNEL_PATH"/wq_dump.py | grep ${WORKQUEUE}
     echo ""
 
-    readonly POOL=$(drgn "$KERNEL_PATH"/wq_dump.py |  grep ${WORKQUEUE}  |  awk {'print $3;'})
-
-    read -sn1 -p "Press any key to continue"
-
-#8
-    echo ""
-    echo ""
-    echo "9. What are the properties of pool ${POOL}?"
-    echo "$ drgn tools/workqueue/wq_dump.py | grep 'pool[${POOL}]'"
-    drgn "$KERNEL_PATH"/wq_dump.py | grep "pool\[${POOL}\]"
-    echo ""
+    readonly NEWPOOL="$(drgn "$KERNEL_PATH"/wq_dump.py |  grep "${WORKQUEUE}"  |  awk {'print $3;'})"
 
     read -sn1 -p "Press any key to continue"
 
 #9
     echo ""
     echo ""
-    echo "8. What else runs in workqueue pool ${POOL}?"
-    echo "$ drgn tools/workqueue/wq_dump.py | grep ${POOL} | grep -v nice"
-    drgn "$KERNEL_PATH/"/wq_dump.py | grep ${POOL} | grep -v nice
+    echo "9. What are the properties of new pool ${NEWPOOL}?"
+    echo "$ drgn tools/workqueue/wq_dump.py | grep 'pool[${NEWPOOL}]'"
+    echo ""
+    "$DRGN" "$KERNEL_PATH"/wq_dump.py | grep "pool\[${NEWPOOL}\]"
     echo ""
 
     read -sn1 -p "Press any key to continue"
 
 #10
+    echo ""
+    echo ""
+    echo "10. What else runs in new workqueue pool ${NEWPOOL}?"
+    echo ""
+    echo "$ drgn tools/workqueue/wq_dump.py | grep ${NEWPOOL} | grep -v nice"
+    echo ""
+    "$DRGN" "$KERNEL_PATH/"/wq_dump.py | grep ${NEWPOOL} | grep -v nice
+    echo ""
+
+    read -sn1 -p "Press any key to continue"
+
+#11
     echo ""
     echo ""
     restore
