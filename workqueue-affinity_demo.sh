@@ -4,9 +4,11 @@ set -e
 set -u
 
 readonly KERNEL_PATH=/home/alison/gitsrc/linux-trees/linux/tools/workqueue
-readonly KERNEL_MIN_VERSION=66
-readonly KERNEL_VERSION="$(uname -r | cut -f 1 -d '-')"
-readonly OPERAND="$(echo 10*"$KERNEL_VERSION" | bc |  cut -f 1 -d '.')"
+readonly KERNEL_MIN_VERSION=6.6
+# Extract "6.7" from "6.7.1-amd64".
+readonly KERNEL_VERSION="$(uname -r | cut -f 1 -d '-' | cut -f 1,2 -d '.')"
+readonly OPERANDA="$(echo 10*"$KERNEL_VERSION" | bc |  cut -f 1 -d '.')"
+readonly OPERANDB="$(echo 10*"$KERNEL_MIN_VERSION" | bc |  cut -f 1 -d '.')"
 readonly WORKQUEUE=nvme-delete-wq
 readonly SYSFS_PATH=/sys/devices/virtual/workqueue/${WORKQUEUE}
 readonly DEFAULT_AFFINITY_SCOPE=$(cat /sys/devices/virtual/workqueue/${WORKQUEUE}/affinity_scope | cut -f 1 -d " ")
@@ -27,7 +29,7 @@ main() {
     echo ""
     echo "0.  Demo will not work before v6.6."
     echo "Kernel version  $(uname -r)"
-    if (( "$OPERAND" < "$KERNEL_MIN_VERSION" )) then
+    if [ "$OPERANDA" -lt "$OPERANDB" ] ; then
          exit 0
     fi
    if [[ ! -f "$DRGN" ]]; then
@@ -38,10 +40,14 @@ main() {
         echo "Needed script ${KERNEL_PATH}/wq_dump.py missing"
 	exit 0
     fi
+    echo ""
+    read -sn1 -p "Press any key to continue"
 
 #1
     echo ""
+    echo ""
     echo "1. Workqueues which are configurable from sysfs:"
+    echo ""
     echo "$ ls /sys/devices/virtual/workqueue"
     ls /sys/devices/virtual/workqueue
     echo ""
@@ -53,6 +59,7 @@ main() {
     echo ""
     echo ""
     echo "2. Consider tunable parameters for ${WORKQUEUE}:"
+    echo ""
     echo "$ ls /sys/devices/virtual/${WORKQUEUE}"
     ls "$SYSFS_PATH"
     echo ""
@@ -63,6 +70,7 @@ main() {
     echo ""
     echo ""
     echo "3. Default affinity scope of unbound ${WORKQUEUE} workqueue:"
+    echo ""
     echo "$ cat /sys/devices/virtual/workqueue/${WORKQUEUE}/affinity_scope"
     cat "$SYSFS_PATH"/affinity_scope
     echo ""
@@ -73,6 +81,7 @@ main() {
     echo ""
     echo ""
     echo "4. Default nice value of unbound ${WORKQUEUE} workqueue:"
+    echo ""
     echo "$ cat /sys/devices/virtual/workqueue/${WORKQUEUE}/nice"
     cat "$SYSFS_PATH"/nice
     echo ""
@@ -82,13 +91,13 @@ main() {
 #5
     echo ""
     echo ""
-    echo "5. Determine in which workqueue pools ${WORKQUEUE} runs by default"
+    echo "5. Determine in which workqueue pool ${WORKQUEUE} runs by default"
     echo ""
+    echo "$ drgn tools/workqueue/wq_dump.py | grep ${WORKQUEUE}"
     echo ""
     echo "Workqueue CPU -> pool"
     echo "====================="
     echo "[    workqueue     \     type   CPU  0  1  2  3  4  5  6  7 dfl]"
-    echo "$ drgn tools/workqueue/wq_dump.py | grep ${WORKQUEUE}"
     "$DRGN" "$KERNEL_PATH"/wq_dump.py | grep ${WORKQUEUE}
     echo ""
 
@@ -102,7 +111,7 @@ main() {
     echo "6. What else runs in workqueue pool ${OLDPOOL}?"
     echo ""
     echo "$ drgn tools/workqueue/wq_dump.py | grep ${OLDPOOL} | grep -v nice"
-    "$DRGN" "$KERNEL_PATH/"/wq_dump.py | grep ${OLDPOOL} | grep -v nice
+    "$DRGN" "$KERNEL_PATH/"/wq_dump.py | grep "${OLDPOOL}" | grep -v nice
     echo ""
 
 #7
@@ -119,7 +128,7 @@ main() {
 #8
     echo ""
     echo ""
-    echo "8. In which workqueue pools does ${WORKQUEUE} run NOW?"
+    echo "8. In which workqueue pool does ${WORKQUEUE} run NOW?"
     echo "$ drgn tools/workqueue/wq_dump.py | grep ${WORKQUEUE}"
     echo ""
     echo ""
@@ -151,7 +160,7 @@ main() {
     echo ""
     echo "$ drgn tools/workqueue/wq_dump.py | grep ${NEWPOOL} | grep -v nice"
     echo ""
-    "$DRGN" "$KERNEL_PATH/"/wq_dump.py | grep ${NEWPOOL} | grep -v nice
+    "$DRGN" "$KERNEL_PATH/"/wq_dump.py | grep "${NEWPOOL}" | grep -v nice
     echo ""
 
     read -sn1 -p "Press any key to continue"
